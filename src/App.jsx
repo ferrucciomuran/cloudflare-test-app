@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import Globe from './Globe.jsx'
+import Login from './Login.jsx'
+import Dashboard from './Dashboard.jsx'
 import './App.css'
+
 
 const CARDS = [
   { id: 'requests', label: 'Requests', icon: '⚡', color: '#7c3aed', suffix: 'K' },
@@ -66,6 +69,8 @@ const STATS = [
 
 export default function App() {
   const [time, setTime] = useState(new Date())
+  const [page, setPage] = useState('home')
+
   useEffect(() => {
     const t = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(t)
@@ -73,6 +78,10 @@ export default function App() {
 
   const fmt = (d) =>
     d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+
+  if (page === 'dashboard') {
+    return <Dashboard onLogout={() => setPage('home')} />
+  }
 
   return (
     <div className="app">
@@ -107,10 +116,13 @@ export default function App() {
             <Globe size={680} />
           </div>
 
-          {/* ── Hero text (above globe) ──────────────────────────────────── */}
+          {/* ── Hero text + Login card ────────────────────────────────────── */}
           <div className="hero-content">
-            <h1 className="hero-title">Cloudflare Pages<br /><span className="gradient-text">React + Vite</span></h1>
-            <p className="hero-sub">Modern frontend · Edge-deployed · Instant worldwide</p>
+            <div className="hero-text">
+              <h1 className="hero-title">Cloudflare Pages<br /><span className="gradient-text">React + Vite</span></h1>
+              <p className="hero-sub">Modern frontend · Edge-deployed · Instant worldwide</p>
+            </div>
+            <Login onLogin={() => setPage('dashboard')} />
           </div>
         </section>
 
