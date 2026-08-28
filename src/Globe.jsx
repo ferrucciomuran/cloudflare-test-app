@@ -6,14 +6,19 @@ const GRID_W = 1080   // offscreen canvas width  (higher = better coastlines)
 const GRID_H = 540    // offscreen canvas height
 const STEP   = 2      // pixel sampling stride → ~80k samples, ~24k land dots
 
-// ── Rasterise TopoJSON → [lat_rad, lon_rad][] (lazy singleton) ───────────────
-let _dotsCache = null
+// ── Rasterise TopoJSON → [lat_rad, lon_rad][] (lazy singleton, async) ────────
+let _dotsCache   = null
+let _dotsPromise = null
 
-function getLandDots() {
-  if (_dotsCache) return _dotsCache
+async function getLandDots() {
+  if (_dotsCache)   return _dotsCache
+  if (_dotsPromise) return _dotsPromise
 
-  // 1. Draw land polygons in white on offscreen canvas
-  const oc  = document.createElement('canvas')
+  _dotsPromise = (async () => {
+    // Dynamic import → separate chunk, keeps main bundle small
+    const landData = await import('world-atlas/land-50m.json')
+    const ld       = landData.default ?? landData
+
   oc.width  = GRID_W
   oc.height = GRID_H
   const ctx = oc.getContext('2d', { willReadFrequently: true })
