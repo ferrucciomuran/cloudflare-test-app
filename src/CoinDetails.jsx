@@ -27,62 +27,199 @@ function LargeChart({ data, color }) {
     if (!cvRef.current || !data || data.length === 0) return
     const cv = cvRef.current
     const ctx = cv.getContext('2d')
-    const W = cv.width = cv.clientWidth
-    const H = cv.height = 300
     
-    ctx.clearRect(0, 0, W, H)
+    // Handle high-DPI displays
+    const dpr = window.devicePixelRatio || 1
+    const rect = cv.getBoundingClientRect()
+    cv.width = rect.width * dpr
+    cv.height = rect.height * dpr
+    ctx.scale(dpr, dpr)
     
+    const W = rect.width
+    const H = rect.height
+    
+    const PAD_B = 24 // Bottom padding for dates
+    const PAD_R = 50 // Right padding for prices
+    const cW = W - PAD_R
+    const cH = H - PAD_B
+    
+    const times = data.map(d => d[0])
     const prices = data.map(d => d[1])
-    const min = Math.min(...prices)
-    const max = Math.max(...prices)
-    const range = max - min || 1
     
-    const pts = prices.map((v, i) => ({
-      x: (i / (prices.length - 1)) * W,
-      y: H - ((v - min) / range) * H * 0.8 - H * 0.1
+    const minP = Math.min(...prices)
+    const maxP = Math.max(...prices)
+    const rangeP = maxP - minP || 1
+    
+    const pts = data.map((d, i) => ({
+      x: (i / (data.length - 1)) * cW,
+      y: cH - ((d[1] - minP) / rangeP) * cH * 0.8 - cH * 0.1,
+      time: d[0],
+      price: d[1]
     }))
 
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)'
-    ctx.lineWidth = 1
-    for (let i = 0; i <= 4; i++) {
-      const y = H * 0.1 + (i / 4) * (H * 0.8)
+    let mouseX = null
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H)
+
+      // ── Grid & Y-Axis (Prices) ──
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)'
+      ctx.fillStyle = '#64748b'
+      ctx.font = '10px Inter, sans-serif'
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.lineWidth = 1
+
+      for (let i = 0; i <= 4; i++) {
+        const y = cH * 0.1 + (i / 4) * (cH * 0.8)
+        const priceVal = maxP - (i / 4) * rangeP
+        
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(cW, y)
+        ctx.stroke()
+        
+        ctx.fillText(fmtCompact(priceVal), cW + 6, y)
+      }
+
+      // ── X-Axis (Dates) ──
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'top'
+      const numLabels = 5
+      for (let i = 0; i < numLabels; i++) {
+        const idx = Math.floor((i / (numLabels - 1)) * (pts.length - 1))
+        const p = pts[idx]
+        const d = new Date(p.time)
+        const label = `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`
+        ctx.fillText(label, p.x, cH + 8)
+      }
+
+      // ── Chart Fill ──
+      const grd = ctx.createLinearGradient(0, 0, 0, cH)
+      grd.addColorStop(0, `${color}44`)
+      grd.addColorStop(1, 'transparent')
+      ctx.fillStyle = grd
       ctx.beginPath()
-      ctx.moveTo(0, y)
-      ctx.lineTo(W, y)
+      ctx.moveTo(pts[0].x, cH)
+      pts.forEach(p => ctx.lineTo(p.x, p.y))
+      ctx.lineTo(pts[pts.length-1].x, cH)
+      ctx.closePath()
+      ctx.fill()
+
+      // ── Chart Line ──
+      ctx.strokeStyle = color
+      ctx.lineWidth = 2.5
+      ctx.lineJoin = 'round'
+      ctx.beginPath()
+      pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y))
       ctx.stroke()
+
+      // ── Hover Interactivity ──
+      if (mouseX !== null && mouseX >= 0 && mouseX <= cW) {
+        // Find closest point
+        let closest = pts[0]
+        let minDist = Infinity
+        for (const p of pts) {
+          const dist = Math.abs(p.x - mouseX)
+          if (dist < minDist) { minDist = dist; closest = p }
+        }
+
+        // Vertical line
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)'
+        ctx.lineWidth = 1
+        ctx.setLineDash([4, 4])
+        ctx.beginPath()
+        ctx.moveTo(closest.x, 0)
+        ctx.lineTo(closest.x, cH)
+        ctx.stroke()
+        ctx.setLineDash([])
+
+        // Dot
+        ctx.fillStyle = color
+        ctx.beginPath()
+        ctx.arc(closest.x, closest.y, 4, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.strokeStyle = '#07091a'
+        ctx.lineWidth = 2
+        ctx.stroke()
+
+        // Tooltip
+        const d = new Date(closest.time)
+        const dateStr = d.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+        const priceStr = fmtCur(closest.price)
+        
+        ctx.font = '600 11px Inter, sans-serif'
+        const twDate = ctx.measureText(dateStr).width
+        const twPrice = ctx.measureText(priceStr).width
+        const tw = Math.max(twDate, twPrice) + 16
+        const th = 40
+        
+        let tx = closest.x - tw / 2
+        let ty = closest.y - th - 12
+        
+        // Boundaries
+        if (tx < 0) tx = 0
+        if (tx + tw > cW) tx = cW - tw
+        if (ty < 0) ty = closest.y + 12
+
+        // Tooltip bg
+        ctx.fillStyle = 'rgba(10,12,22,0.9)'
+        ctx.beginPath()
+        ctx.roundRect(tx, ty, tw, th, 6)
+        ctx.fill()
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+        ctx.lineWidth = 1
+        ctx.stroke()
+
+        // Tooltip text
+        ctx.textAlign = 'center'
+        ctx.fillStyle = '#94a3b8'
+        ctx.font = '10px Inter, sans-serif'
+        ctx.fillText(dateStr, tx + tw/2, ty + 6)
+        
+        ctx.fillStyle = '#f0f2ff'
+        ctx.font = '600 11px Inter, sans-serif'
+        ctx.fillText(priceStr, tx + tw/2, ty + 20)
+      } else {
+        // Just draw the last point if not hovering
+        const last = pts[pts.length - 1]
+        ctx.fillStyle = color
+        ctx.beginPath()
+        ctx.arc(last.x, last.y, 4, 0, Math.PI * 2)
+        ctx.fill()
+      }
     }
 
-    // Fill
-    const grd = ctx.createLinearGradient(0, 0, 0, H)
-    grd.addColorStop(0, `${color}44`)
-    grd.addColorStop(1, 'transparent')
-    ctx.fillStyle = grd
-    ctx.beginPath()
-    ctx.moveTo(pts[0].x, H)
-    pts.forEach(p => ctx.lineTo(p.x, p.y))
-    ctx.lineTo(pts[pts.length-1].x, H)
-    ctx.closePath()
-    ctx.fill()
+    // Initial draw
+    draw()
 
-    // Line
-    ctx.strokeStyle = color
-    ctx.lineWidth = 2.5
-    ctx.lineJoin = 'round'
-    ctx.beginPath()
-    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y))
-    ctx.stroke()
+    // Event listeners
+    const handleMove = (e) => {
+      const rect = cv.getBoundingClientRect()
+      mouseX = e.clientX - rect.left
+      draw()
+    }
+    const handleLeave = () => {
+      mouseX = null
+      draw()
+    }
 
-    // Current price dot
-    const last = pts[pts.length - 1]
-    ctx.fillStyle = color
-    ctx.beginPath()
-    ctx.arc(last.x, last.y, 4, 0, Math.PI * 2)
-    ctx.fill()
+    cv.addEventListener('mousemove', handleMove)
+    cv.addEventListener('mouseleave', handleLeave)
+    
+    return () => {
+      cv.removeEventListener('mousemove', handleMove)
+      cv.removeEventListener('mouseleave', handleLeave)
+    }
 
   }, [data, color])
 
-  return <canvas ref={cvRef} style={{ width: '100%', height: '300px', display: 'block' }} />
+  return (
+    <canvas 
+      ref={cvRef} 
+      style={{ width: '100%', height: '300px', display: 'block', cursor: 'crosshair' }} 
+    />
+  )
 }
 
 export default function CoinDetails({ coin, onBack }) {
