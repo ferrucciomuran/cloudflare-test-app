@@ -309,3 +309,13 @@
 [2026-08-28 23:20:18] \033[1;33m📁  File modificato:\033[0m CoinDetails.jsx
 [2026-08-28 23:20:21] \033[1;33m📁  File modificato:\033[0m CoinDetails.jsx
 [2026-08-28 23:20:25] \033[0;34m⚡  Modifiche rilevate — avvio git flow...\033[0m
+[2026-08-28 23:20:25]    commit   | [main 1d81cc0] Auto-deploy: 2026-08-28 23:20:25
+[2026-08-28 23:20:25]    commit   |  2 files changed, 31 insertions(+), 8 deletions(-)
+[2026-08-28 23:20:25] \033[0;32m✔  Commit eseguito:\033[0m "Auto-deploy: 2026-08-28 23:20:25"
+[2026-08-28 23:20:26]    push     | To https://github.com/ferrucciomuran/cloudflare-test-app.git
+[2026-08-28 23:20:26]    push     |    6b3eb53..1d81cc0  main -> main
+[2026-08-28 23:20:26] \033[0;32m✓  Push completato su origin/main\033[0m
+[2026-08-28 23:22:14] \033[1;33m📁  File modificato:\033[0m Dashboard.css
+[2026-08-28 23:22:14] \033[1;33m📁  File modificato:\033[0m Dashboard.css
+[2026-08-28 23:22:15] \033[1;33m📁  File modificato:\033[0m Dashboard.css
+[2026-08-28 23:22:19] \033[0;34m⚡  Modifiche rilevate — avvio git flow...\033[0m
