@@ -4,7 +4,7 @@ import { feature } from 'topojson-client'
 // ── Config ────────────────────────────────────────────────────────────────────
 const GRID_W = 1080   // offscreen raster width  (higher = better coastline)
 const GRID_H = 540    // offscreen raster height
-const STEP   = 2      // pixel sample stride → ~24 k land dots
+const STEP   = 3      // pixel sample stride → ~11 k land dots
 
 // ── Rasterise TopoJSON → [lat_rad, lon_rad][] (async lazy singleton) ─────────
 let _dotsCache   = null
@@ -65,7 +65,8 @@ async function getLandDots() {
       for (let px = 0; px < GRID_W; px += STEP) {
         if (imgData[(py * GRID_W + px) * 4] > 128) {
           const lon = ((px / GRID_W) * 360 - 180) * DEG2RAD
-          const lat = (90 - (py / GRID_H) * 180)  * DEG2RAD
+          // py=0 = top of raster = south in world-atlas y-orientation → negate
+          const lat = ((py / GRID_H) * 180 - 90) * DEG2RAD * -1
           dots.push([lat, lon])
         }
       }
