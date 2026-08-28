@@ -355,7 +355,11 @@ export default function CoinDetails({ coin, onBack }) {
         const data = await res.json()
         setChartData(data.prices)
       } catch (err) {
-        setError(err.message)
+        if (err.message === 'Failed to fetch') {
+          setError('Rate Limit raggiunto (Troppe richieste veloci). Attendi 30-60 secondi e riprova.')
+        } else {
+          setError(err.message)
+        }
       } finally {
         setLoading(false)
       }
