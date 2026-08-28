@@ -109,7 +109,40 @@ html, body {
 }
 
 /* ── HERO ── */
-.hero { text-align: center; }
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  min-height: 340px;
+  display: flex;
+  align-items: center;
+  /* subtle border so the hero feels like a card */
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+/* Globe positioned right-side, partially clipped */
+.globe-bg {
+  position: absolute;
+  right: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.45;
+  pointer-events: none;
+  /* Fade out the left edge so globe blends with text */
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 20%, black 50%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 20%, black 50%);
+}
+
+/* Hero text on top of globe */
+.hero-content {
+  position: relative;
+  z-index: 1;
+  padding: 48px 40px;
+  text-align: left;
+  max-width: 520px;
+}
+
 .hero-title {
   font-size: clamp(2rem, 5vw, 3.4rem);
   font-weight: 800;
