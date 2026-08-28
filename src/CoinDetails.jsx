@@ -332,15 +332,25 @@ export default function CoinDetails({ coin, onBack }) {
   const [chartData, setChartData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [days, setDays] = useState('30')
   
   const isUp = coin.price_change_percentage_24h >= 0
   const color = isUp ? '#10b981' : '#ef4444'
+
+  const timeframes = [
+    { label: '7D', value: '7' },
+    { label: '30D', value: '30' },
+    { label: '3M', value: '90' },
+    { label: '6M', value: '180' },
+    { label: '1Y', value: '365' },
+    { label: 'ALL', value: 'max' },
+  ]
 
   useEffect(() => {
     const fetchChart = async () => {
       try {
         setLoading(true)
-        const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}/market_chart?vs_currency=usd&days=30`)
+        const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}/market_chart?vs_currency=usd&days=${days}`)
         if (!res.ok) throw new Error('API Rate limit reached')
         const data = await res.json()
         setChartData(data.prices)
@@ -351,7 +361,7 @@ export default function CoinDetails({ coin, onBack }) {
       }
     }
     fetchChart()
-  }, [coin.id])
+  }, [coin.id, days])
 
   return (
     <div className="db-details-view">
@@ -409,7 +419,20 @@ export default function CoinDetails({ coin, onBack }) {
 
         <div className="db-details-chart-panel db-panel">
           <div className="db-panel-header">
-            <span className="db-panel-title">Price History (30 Days)</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span className="db-panel-title">Price History</span>
+              <div className="db-timeframe-selector">
+                {timeframes.map(tf => (
+                  <button
+                    key={tf.value}
+                    className={`db-tf-btn ${days === tf.value ? 'active' : ''}`}
+                    onClick={() => setDays(tf.value)}
+                  >
+                    {tf.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <span className="db-panel-badge live">● Live</span>
           </div>
           <div className="db-chart-container">
