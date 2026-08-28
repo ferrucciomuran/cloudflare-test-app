@@ -577,6 +577,42 @@
 .db-details-chart-panel .db-panel-header {
   border-bottom: 1px solid rgba(255,255,255,0.03);
   padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
+
+.db-timeframe-selector {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.db-tf-btn {
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.db-tf-btn:hover {
+  color: #e2e8f0;
+}
+
+.db-tf-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
 .db-chart-container { flex: 1; padding: 20px; display: flex; align-items: center; justify-content: center; position: relative; }
 .db-details-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; color: #94a3b8; font-size: 0.95rem; font-weight: 500; }
