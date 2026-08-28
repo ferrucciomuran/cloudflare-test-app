@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import CoinDetails from './CoinDetails.jsx'
 import './Dashboard.css'
 
 // ── Animated counter ───────────────────────────────────────────────────────────
@@ -129,6 +130,9 @@ export default function Dashboard({ onLogout }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [globalData, setGlobalData] = useState({ vol: 0, btc: 0, gainer: null })
+  
+  const [sortConfig, setSortConfig] = useState({ key: 'total_volume', dir: 'desc' })
+  const [selectedCoin, setSelectedCoin] = useState(null)
 
   // Clock
   useEffect(() => {
@@ -178,6 +182,32 @@ export default function Dashboard({ onLogout }) {
 
   const fmt = d => d.toLocaleTimeString('en-GB',{ hour:'2-digit', minute:'2-digit', second:'2-digit' })
   const fmtDate = d => d.toLocaleDateString('en-GB',{ weekday:'short', day:'numeric', month:'short' })
+
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      dir: prev.key === key && prev.dir === 'desc' ? 'asc' : 'desc'
+    }))
+  }
+
+  const sortedCoins = [...coins].sort((a, b) => {
+    let aVal = a[sortConfig.key] ?? 0
+    let bVal = b[sortConfig.key] ?? 0
+    
+    if (typeof aVal === 'string') {
+      aVal = aVal.toLowerCase()
+      bVal = bVal.toLowerCase()
+    }
+    
+    if (aVal < bVal) return sortConfig.dir === 'asc' ? -1 : 1
+    if (aVal > bVal) return sortConfig.dir === 'asc' ? 1 : -1
+    return 0
+  })
+
+  const SortIcon = ({ sortKey }) => {
+    if (sortConfig.key !== sortKey) return null
+    return <span className="db-sort-icon">{sortConfig.dir === 'asc' ? '↑' : '↓'}</span>
+  }
 
   return (
     <div className="db">
@@ -233,111 +263,129 @@ export default function Dashboard({ onLogout }) {
         </header>
 
         {/* Main */}
-        <main className="db-main">
-          {/* Metric cards */}
-          <div className="db-metrics-row">
-            <MetricCard 
-              icon="📊" 
-              label="Top 50 24h Volume" 
-              value={globalData.vol} 
-              isCompact 
-              color="#0ea5e9" 
-            />
-            <MetricCard 
-              icon="₿" 
-              label="BTC Price" 
-              value={globalData.btc} 
-              isCurrency 
-              color="#f59e0b" 
-            />
-            {globalData.gainer ? (
+        {selectedCoin ? (
+          <main className="db-main">
+            <CoinDetails coin={selectedCoin} onBack={() => setSelectedCoin(null)} />
+          </main>
+        ) : (
+          <main className="db-main">
+            {/* Metric cards */}
+            <div className="db-metrics-row">
               <MetricCard 
-                icon="🚀" 
-                label={`Top Gainer: ${globalData.gainer.symbol.toUpperCase()}`} 
-                value={globalData.gainer.current_price} 
-                isCurrency
-                delta={globalData.gainer.price_change_percentage_24h}
-                color="#10b981" 
+                icon="📊" 
+                label="Top 50 24h Volume" 
+                value={globalData.vol} 
+                isCompact 
+                color="#0ea5e9" 
               />
-            ) : (
-              <MetricCard icon="🚀" label="Top Gainer" value={0} color="#10b981" />
-            )}
-            <MetricCard 
-              icon="⚡" 
-              label="API Status" 
-              value="Nominal" 
-              color="#7c3aed" 
-            />
-          </div>
-
-          {/* Table Panel */}
-          <div className="db-panel db-table-panel">
-            <div className="db-panel-header">
-              <span className="db-panel-title">Volume Leaderboard (Top 50)</span>
-              <span className="db-panel-badge live">● CoinGecko Data</span>
-            </div>
-            
-            <div className="db-table-container">
-              {error ? (
-                <div className="db-error-msg">
-                  Failed to fetch data: {error}. Please try again in a minute (Rate Limit).
-                </div>
+              <MetricCard 
+                icon="₿" 
+                label="BTC Price" 
+                value={globalData.btc} 
+                isCurrency 
+                color="#f59e0b" 
+              />
+              {globalData.gainer ? (
+                <MetricCard 
+                  icon="🚀" 
+                  label={`Top Gainer: ${globalData.gainer.symbol.toUpperCase()}`} 
+                  value={globalData.gainer.current_price} 
+                  isCurrency
+                  delta={globalData.gainer.price_change_percentage_24h}
+                  color="#10b981" 
+                />
               ) : (
-                <table className="db-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '40px' }}>#</th>
-                      <th style={{ textAlign: 'left' }}>Asset</th>
-                      <th>Price</th>
-                      <th>24h Change</th>
-                      <th>24h Volume</th>
-                      <th>Market Cap</th>
-                      <th style={{ width: '130px', textAlign: 'center' }}>Last 7 Days</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {coins.map((coin, idx) => {
-                      const isUp = coin.price_change_percentage_24h >= 0
-                      const color = isUp ? '#10b981' : '#ef4444'
-                      return (
-                        <tr key={coin.id}>
-                          <td className="db-td-rank">{idx + 1}</td>
-                          <td>
-                            <div className="db-td-asset">
-                              <img src={coin.image} alt={coin.name} className="db-coin-img" />
-                              <div className="db-coin-info">
-                                <span className="db-coin-name">{coin.name}</span>
-                                <span className="db-coin-sym">{coin.symbol.toUpperCase()}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="db-td-num">{fmtCur(coin.current_price)}</td>
-                          <td className="db-td-num" style={{ color, fontWeight: 600 }}>
-                            {isUp ? '+' : ''}{coin.price_change_percentage_24h?.toFixed(2)}%
-                          </td>
-                          <td className="db-td-num">{fmtCompact(coin.total_volume)}</td>
-                          <td className="db-td-num">{fmtCompact(coin.market_cap)}</td>
-                          <td style={{ padding: '4px 8px' }}>
-                            {coin.sparkline_in_7d?.price && (
-                              <Sparkline data={coin.sparkline_in_7d.price} color={color} />
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                    {coins.length === 0 && !error && (
-                      Array(10).fill(0).map((_, i) => (
-                        <tr key={i} className="db-skeleton-row">
-                          <td colSpan="7"><div className="db-skeleton-pulse"></div></td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <MetricCard icon="🚀" label="Top Gainer" value={0} color="#10b981" />
               )}
+              <MetricCard 
+                icon="⚡" 
+                label="API Status" 
+                value="Nominal" 
+                color="#7c3aed" 
+              />
             </div>
-          </div>
-        </main>
+
+            {/* Table Panel */}
+            <div className="db-panel db-table-panel">
+              <div className="db-panel-header">
+                <span className="db-panel-title">Volume Leaderboard (Top 50)</span>
+                <span className="db-panel-badge live">● CoinGecko Data</span>
+              </div>
+              
+              <div className="db-table-container">
+                {error ? (
+                  <div className="db-error-msg">
+                    Failed to fetch data: {error}. Please try again in a minute (Rate Limit).
+                  </div>
+                ) : (
+                  <table className="db-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: '40px' }} className="db-th-sort" onClick={() => handleSort('market_cap_rank')}>
+                          # <SortIcon sortKey="market_cap_rank" />
+                        </th>
+                        <th style={{ textAlign: 'left' }} className="db-th-sort" onClick={() => handleSort('name')}>
+                          Asset <SortIcon sortKey="name" />
+                        </th>
+                        <th className="db-th-sort" onClick={() => handleSort('current_price')}>
+                          Price <SortIcon sortKey="current_price" />
+                        </th>
+                        <th className="db-th-sort" onClick={() => handleSort('price_change_percentage_24h')}>
+                          24h Change <SortIcon sortKey="price_change_percentage_24h" />
+                        </th>
+                        <th className="db-th-sort" onClick={() => handleSort('total_volume')}>
+                          24h Volume <SortIcon sortKey="total_volume" />
+                        </th>
+                        <th className="db-th-sort" onClick={() => handleSort('market_cap')}>
+                          Market Cap <SortIcon sortKey="market_cap" />
+                        </th>
+                        <th style={{ width: '130px', textAlign: 'center' }}>Last 7 Days</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedCoins.map((coin, idx) => {
+                        const isUp = coin.price_change_percentage_24h >= 0
+                        const color = isUp ? '#10b981' : '#ef4444'
+                        return (
+                          <tr key={coin.id} className="db-tr-hover" onClick={() => setSelectedCoin(coin)}>
+                            <td className="db-td-rank">{coin.market_cap_rank}</td>
+                            <td>
+                              <div className="db-td-asset">
+                                <img src={coin.image} alt={coin.name} className="db-coin-img" />
+                                <div className="db-coin-info">
+                                  <span className="db-coin-name">{coin.name}</span>
+                                  <span className="db-coin-sym">{coin.symbol.toUpperCase()}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="db-td-num">{fmtCur(coin.current_price)}</td>
+                            <td className="db-td-num" style={{ color, fontWeight: 600 }}>
+                              {isUp ? '+' : ''}{coin.price_change_percentage_24h?.toFixed(2)}%
+                            </td>
+                            <td className="db-td-num">{fmtCompact(coin.total_volume)}</td>
+                            <td className="db-td-num">{fmtCompact(coin.market_cap)}</td>
+                            <td style={{ padding: '4px 8px' }}>
+                              {coin.sparkline_in_7d?.price && (
+                                <Sparkline data={coin.sparkline_in_7d.price} color={color} />
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {coins.length === 0 && !error && (
+                        Array(10).fill(0).map((_, i) => (
+                          <tr key={i} className="db-skeleton-row">
+                            <td colSpan="7"><div className="db-skeleton-pulse"></div></td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </main>
+        )}
       </div>
     </div>
   )
