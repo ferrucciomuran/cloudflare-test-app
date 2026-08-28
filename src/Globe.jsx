@@ -61,19 +61,20 @@ async function getLandDots() {
     const DEG2RAD = Math.PI / 180
     const dots    = []
 
-    // Jitter: ±0.6 of grid step in radians → breaks the perfect arc pattern
-    const JITTER = (STEP / GRID_W) * 360 * 0.6 * (Math.PI / 180)
+    // Jitter: ±3× grid step in radians → strongly breaks the concentric arc pattern
+    const JITTER = (STEP / GRID_W) * 360 * 3.0 * (Math.PI / 180)
 
     for (let py = 0; py < GRID_H; py += STEP) {
       for (let px = 0; px < GRID_W; px += STEP) {
         if (imgData[(py * GRID_W + px) * 4] > 128) {
           const lon = ((px / GRID_W) * 360 - 180) * DEG2RAD + (Math.random() - 0.5) * JITTER
           // py=0 = top of raster = north pole (+90°)
-          const lat = (90 - (py / GRID_H) * 180) * DEG2RAD + (Math.random() - 0.5) * JITTER * 0.5
+          const lat = (90 - (py / GRID_H) * 180) * DEG2RAD + (Math.random() - 0.5) * JITTER
           dots.push([lat, lon])
         }
       }
     }
+
 
     _dotsCache = dots
     return dots
