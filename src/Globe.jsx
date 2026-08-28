@@ -65,8 +65,8 @@ async function getLandDots() {
       for (let px = 0; px < GRID_W; px += STEP) {
         if (imgData[(py * GRID_W + px) * 4] > 128) {
           const lon = ((px / GRID_W) * 360 - 180) * DEG2RAD
-          // world-atlas raster: py=0 = north pole top → standard convention
-          const lat = ((py / GRID_H) * 180 - 90) * DEG2RAD
+          // py=0 = top of raster = north pole (+90°)
+          const lat = (90 - (py / GRID_H) * 180) * DEG2RAD
           dots.push([lat, lon])
 
         }
