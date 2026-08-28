@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import landData from 'world-atlas/land-50m.json'
 import { feature } from 'topojson-client'
 
 // ── Config ────────────────────────────────────────────────────────────────────
