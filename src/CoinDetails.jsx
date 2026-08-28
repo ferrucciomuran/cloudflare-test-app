@@ -46,7 +46,7 @@ function LargeChart({ data, color }) {
     const times = data.map(d => d[0])
     const prices = data.map(d => d[1])
     
-    const minP = Math.min(...prices)
+    const minP = 0
     const maxP = Math.max(...prices)
     const rangeP = maxP - minP || 1
     
