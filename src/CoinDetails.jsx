@@ -43,24 +43,32 @@ function LargeChart({ data, color }) {
     const cW = W - PAD_R
     const cH = H - PAD_B
     
-    const times = data.map(d => d[0])
-    const prices = data.map(d => d[1])
-    
-    const minP = 0
-    const maxP = Math.max(...prices)
-    const rangeP = maxP - minP || 1
-    
-    const pts = data.map((d, i) => ({
-      x: (i / (data.length - 1)) * cW,
-      y: cH - ((d[1] - minP) / rangeP) * cH * 0.8 - cH * 0.1,
-      time: d[0],
-      price: d[1]
-    }))
-
+    // State for zoom/pan
+    let scale = 1
+    let offsetX = 0
     let mouseX = null
+    let isDragging = false
+    let lastDragX = 0
 
     const draw = () => {
       ctx.clearRect(0, 0, W, H)
+      
+      // Calculate visible data bounds
+      const getIndex = (x) => {
+        const raw = (x - offsetX) / scale / cW * (data.length - 1)
+        return Math.max(0, Math.min(data.length - 1, raw))
+      }
+      
+      const startIdx = Math.floor(getIndex(0))
+      const endIdx = Math.ceil(getIndex(cW))
+      
+      let maxP = 0
+      for (let i = startIdx; i <= endIdx; i++) {
+        if (data[i][1] > maxP) maxP = data[i][1]
+      }
+      if (maxP === 0) maxP = Math.max(...data.map(d => d[1]))
+      const minP = 0
+      const rangeP = maxP - minP || 1
 
       // ── Grid & Y-Axis (Prices) ──
       ctx.strokeStyle = 'rgba(255,255,255,0.05)'
@@ -82,19 +90,40 @@ function LargeChart({ data, color }) {
         ctx.fillText(fmtCompact(priceVal), cW + 6, y)
       }
 
+      // Generate transformed points
+      const pts = []
+      const safeStart = Math.max(0, startIdx - 5)
+      const safeEnd = Math.min(data.length - 1, endIdx + 5)
+      
+      for (let i = safeStart; i <= safeEnd; i++) {
+        const d = data[i]
+        const px = (i / (data.length - 1)) * cW * scale + offsetX
+        const py = cH - ((d[1] - minP) / rangeP) * cH * 0.8 - cH * 0.1
+        pts.push({ x: px, y: py, time: d[0], price: d[1] })
+      }
+
+      if (pts.length === 0) return
+
       // ── X-Axis (Dates) ──
       ctx.textAlign = 'center'
       ctx.textBaseline = 'top'
       const numLabels = 5
       for (let i = 0; i < numLabels; i++) {
-        const idx = Math.floor((i / (numLabels - 1)) * (pts.length - 1))
-        const p = pts[idx]
-        const d = new Date(p.time)
-        const label = `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`
-        ctx.fillText(label, p.x, cH + 8)
+        const xPos = cW * (i / (numLabels - 1))
+        const idx = Math.floor(getIndex(xPos))
+        if (idx >= 0 && idx < data.length) {
+          const d = new Date(data[idx][0])
+          const label = `${d.getDate()} ${d.toLocaleString('default', { month: 'short' })}`
+          ctx.fillText(label, xPos, cH + 8)
+        }
       }
 
       // ── Chart Fill ──
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(0, 0, cW, H)
+      ctx.clip()
+
       const grd = ctx.createLinearGradient(0, 0, 0, cH)
       grd.addColorStop(0, `${color}44`)
       grd.addColorStop(1, 'transparent')
@@ -115,8 +144,7 @@ function LargeChart({ data, color }) {
       ctx.stroke()
 
       // ── Hover Interactivity ──
-      if (mouseX !== null && mouseX >= 0 && mouseX <= cW) {
-        // Find closest point
+      if (mouseX !== null && mouseX >= 0 && mouseX <= cW && !isDragging) {
         let closest = pts[0]
         let minDist = Infinity
         for (const p of pts) {
@@ -124,91 +152,147 @@ function LargeChart({ data, color }) {
           if (dist < minDist) { minDist = dist; closest = p }
         }
 
-        // Vertical line
-        ctx.strokeStyle = 'rgba(255,255,255,0.2)'
-        ctx.lineWidth = 1
-        ctx.setLineDash([4, 4])
-        ctx.beginPath()
-        ctx.moveTo(closest.x, 0)
-        ctx.lineTo(closest.x, cH)
-        ctx.stroke()
-        ctx.setLineDash([])
+        if (closest) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)'
+          ctx.lineWidth = 1
+          ctx.setLineDash([4, 4])
+          ctx.beginPath()
+          ctx.moveTo(closest.x, 0)
+          ctx.lineTo(closest.x, cH)
+          ctx.stroke()
+          ctx.setLineDash([])
 
-        // Dot
-        ctx.fillStyle = color
-        ctx.beginPath()
-        ctx.arc(closest.x, closest.y, 4, 0, Math.PI * 2)
-        ctx.fill()
-        ctx.strokeStyle = '#07091a'
-        ctx.lineWidth = 2
-        ctx.stroke()
+          ctx.fillStyle = color
+          ctx.beginPath()
+          ctx.arc(closest.x, closest.y, 4, 0, Math.PI * 2)
+          ctx.fill()
+          ctx.strokeStyle = '#07091a'
+          ctx.lineWidth = 2
+          ctx.stroke()
 
-        // Tooltip
-        const d = new Date(closest.time)
-        const dateStr = d.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
-        const priceStr = fmtCur(closest.price)
-        
-        ctx.font = '600 11px Inter, sans-serif'
-        const twDate = ctx.measureText(dateStr).width
-        const twPrice = ctx.measureText(priceStr).width
-        const tw = Math.max(twDate, twPrice) + 16
-        const th = 40
-        
-        let tx = closest.x - tw / 2
-        let ty = closest.y - th - 12
-        
-        // Boundaries
-        if (tx < 0) tx = 0
-        if (tx + tw > cW) tx = cW - tw
-        if (ty < 0) ty = closest.y + 12
+          const d = new Date(closest.time)
+          const dateStr = d.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+          const priceStr = fmtCur(closest.price)
+          
+          ctx.font = '600 11px Inter, sans-serif'
+          const twDate = ctx.measureText(dateStr).width
+          const twPrice = ctx.measureText(priceStr).width
+          const tw = Math.max(twDate, twPrice) + 16
+          const th = 40
+          
+          let tx = closest.x - tw / 2
+          let ty = closest.y - th - 12
+          
+          if (tx < 0) tx = 0
+          if (tx + tw > cW) tx = cW - tw
+          if (ty < 0) ty = closest.y + 12
 
-        // Tooltip bg
-        ctx.fillStyle = 'rgba(10,12,22,0.9)'
-        ctx.beginPath()
-        ctx.roundRect(tx, ty, tw, th, 6)
-        ctx.fill()
-        ctx.strokeStyle = 'rgba(255,255,255,0.1)'
-        ctx.lineWidth = 1
-        ctx.stroke()
+          ctx.fillStyle = 'rgba(10,12,22,0.9)'
+          ctx.beginPath()
+          ctx.roundRect(tx, ty, tw, th, 6)
+          ctx.fill()
+          ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+          ctx.lineWidth = 1
+          ctx.stroke()
 
-        // Tooltip text
-        ctx.textAlign = 'center'
-        ctx.fillStyle = '#94a3b8'
-        ctx.font = '10px Inter, sans-serif'
-        ctx.fillText(dateStr, tx + tw/2, ty + 6)
-        
-        ctx.fillStyle = '#f0f2ff'
-        ctx.font = '600 11px Inter, sans-serif'
-        ctx.fillText(priceStr, tx + tw/2, ty + 20)
-      } else {
-        // Just draw the last point if not hovering
+          ctx.textAlign = 'center'
+          ctx.fillStyle = '#94a3b8'
+          ctx.font = '10px Inter, sans-serif'
+          ctx.fillText(dateStr, tx + tw/2, ty + 6)
+          
+          ctx.fillStyle = '#f0f2ff'
+          ctx.font = '600 11px Inter, sans-serif'
+          ctx.fillText(priceStr, tx + tw/2, ty + 20)
+        }
+      } else if (!isDragging) {
         const last = pts[pts.length - 1]
-        ctx.fillStyle = color
-        ctx.beginPath()
-        ctx.arc(last.x, last.y, 4, 0, Math.PI * 2)
-        ctx.fill()
+        if (last && last.x <= cW && last.x >= 0) {
+          ctx.fillStyle = color
+          ctx.beginPath()
+          ctx.arc(last.x, last.y, 4, 0, Math.PI * 2)
+          ctx.fill()
+        }
       }
+      
+      ctx.restore() // remove clip
     }
 
-    // Initial draw
     draw()
 
-    // Event listeners
-    const handleMove = (e) => {
-      const rect = cv.getBoundingClientRect()
-      mouseX = e.clientX - rect.left
-      draw()
-    }
-    const handleLeave = () => {
-      mouseX = null
-      draw()
+    const clampOffset = (newScale, newOffset) => {
+      const minOffset = cW - cW * newScale
+      return Math.min(0, Math.max(minOffset, newOffset))
     }
 
-    cv.addEventListener('mousemove', handleMove)
+    const handleWheel = (e) => {
+      e.preventDefault()
+      const rect = cv.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      if (mx > cW) return 
+
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85
+      let newScale = scale * zoomFactor
+      if (newScale < 1) newScale = 1
+      if (newScale > 50) newScale = 50
+
+      let newOffset = mx - ((mx - offsetX) / scale) * newScale
+      newOffset = clampOffset(newScale, newOffset)
+
+      scale = newScale
+      offsetX = newOffset
+      mouseX = mx
+      requestAnimationFrame(draw)
+    }
+
+    const handleDown = (e) => {
+      const rect = cv.getBoundingClientRect()
+      const mx = e.clientX - rect.left
+      if (mx > cW) return
+      isDragging = true
+      lastDragX = e.clientX
+      cv.style.cursor = 'grabbing'
+    }
+
+    const handleMove = (e) => {
+      const rect = cv.getBoundingClientRect()
+      const newMouseX = e.clientX - rect.left
+      
+      // Update hover tooltip
+      if (!isDragging) {
+        mouseX = newMouseX
+      } else {
+        mouseX = null // Hide tooltip while dragging
+        const deltaX = e.clientX - lastDragX
+        offsetX = clampOffset(scale, offsetX + deltaX)
+        lastDragX = e.clientX
+      }
+      requestAnimationFrame(draw)
+    }
+
+    const handleUp = () => {
+      isDragging = false
+      cv.style.cursor = 'crosshair'
+      requestAnimationFrame(draw)
+    }
+
+    const handleLeave = () => {
+      isDragging = false
+      mouseX = null
+      cv.style.cursor = 'crosshair'
+      requestAnimationFrame(draw)
+    }
+
+    cv.addEventListener('wheel', handleWheel, { passive: false })
+    cv.addEventListener('mousedown', handleDown)
+    window.addEventListener('mousemove', handleMove)
+    window.addEventListener('mouseup', handleUp)
     cv.addEventListener('mouseleave', handleLeave)
     
     return () => {
-      cv.removeEventListener('mousemove', handleMove)
+      cv.removeEventListener('wheel', handleWheel)
+      cv.removeEventListener('mousedown', handleDown)
+      window.removeEventListener('mousemove', handleMove)
+      window.removeEventListener('mouseup', handleUp)
       cv.removeEventListener('mouseleave', handleLeave)
     }
 
@@ -217,7 +301,7 @@ function LargeChart({ data, color }) {
   return (
     <canvas 
       ref={cvRef} 
-      style={{ width: '100%', height: '300px', display: 'block', cursor: 'crosshair' }} 
+      style={{ width: '100%', height: '300px', display: 'block', cursor: 'crosshair', userSelect: 'none', touchAction: 'none' }} 
     />
   )
 }
