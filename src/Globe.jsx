@@ -155,13 +155,20 @@ export default function Globe({ size = 680 }) {
           const theta = lon + rot
 
           const cosLat = Math.cos(lat)
-          const x3 = cosLat * Math.sin(theta)   // sin → east is RIGHT
+          // Sphere coords (y-up, z-toward-viewer)
+          const x3 = cosLat * Math.sin(theta)
           const y3 = Math.sin(lat)
-          const z3 = cosLat * Math.cos(theta)   // cos → depth/visibility
+          const z3 = cosLat * Math.cos(theta)
 
-          if (z3 < -0.04) continue
+          // ── Axial tilt: rotate ~38° around X toward viewer so Europe is visible ──
+          const TILT_COS = 0.788   // cos(38°)
+          const TILT_SIN = 0.616   // sin(38°)
+          const y3t = y3 * TILT_COS - z3 * TILT_SIN
+          const z3t = y3 * TILT_SIN + z3 * TILT_COS
 
-          visible.push(cx + x3 * R, cy - y3 * R, (z3 + 1) * 0.5, lon)
+          if (z3t < -0.04) continue
+
+          visible.push(cx + x3 * R, cy - y3t * R, (z3t + 1) * 0.5, lon)
         }
 
         // Sort back→front by depth (z-index slot = index * 4 + 2)
@@ -183,7 +190,8 @@ export default function Globe({ size = 680 }) {
         }
       }
 
-      rot += 0.0028
+      rot -= 0.0028   // counter-clockwise (west→east)
+
       raf = requestAnimationFrame(draw)
     }
 
