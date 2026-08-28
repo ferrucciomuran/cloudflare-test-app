@@ -291,7 +291,12 @@
   color: #475569;
   border-bottom: 1px solid rgba(99,179,237,0.1);
   z-index: 2;
+  transition: color 0.15s;
 }
+
+.db-th-sort { cursor: pointer; user-select: none; }
+.db-th-sort:hover { color: #94a3b8; }
+.db-sort-icon { color: #0ea5e9; font-weight: 800; margin-left: 4px; font-size: 0.75rem; }
 
 .db-table td {
   padding: 10px 16px;
@@ -302,10 +307,11 @@
 }
 
 .db-table tbody tr {
-  transition: background 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
-.db-table tbody tr:hover {
-  background: rgba(255,255,255,0.02);
+.db-table tbody tr.db-tr-hover { cursor: pointer; }
+.db-table tbody tr.db-tr-hover:hover {
+  background: rgba(255,255,255,0.04);
 }
 
 .db-td-rank {
@@ -377,3 +383,81 @@
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ── Coin Details View ──────────────────────────────────────────────────────── */
+.db-details-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+}
+
+.db-details-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 0;
+}
+
+.db-back-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.db-back-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+.db-details-title { display: flex; align-items: center; gap: 12px; }
+.db-details-img { width: 42px; height: 42px; border-radius: 50%; }
+.db-details-title h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #f0f2ff;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.db-details-title h1 span { font-size: 1rem; font-weight: 700; color: #64748b; }
+
+.db-details-main {
+  display: flex;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+}
+
+.db-details-sidebar {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.db-details-sidebar::-webkit-scrollbar { width: 4px; }
+.db-details-sidebar::-webkit-scrollbar-thumb { background: rgba(99,179,237,0.1); border-radius: 2px; }
+
+.db-details-card {
+  background: #07091a;
+  border: 1px solid rgba(99,179,237,0.08);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.db-details-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; }
+.db-details-val { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; color: #e2e8f0; }
+.db-details-val.large { font-size: 1.8rem; letter-spacing: -0.04em; }
+.db-details-change { font-size: 0.8rem; font-weight: 600; margin-top: 2px; }
+
+.db-details-chart-panel { flex: 1; display: flex; flex-direction: column; }
+.db-chart-container { flex: 1; padding: 20px; display: flex; align-items: center; justify-content: center; position: relative; }
+.db-details-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; color: #64748b; font-size: 0.85rem; font-weight: 500; }
