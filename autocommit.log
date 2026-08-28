@@ -4,3 +4,16 @@
 [2026-08-28 22:06:24] \033[1;33m📁  File modificato:\033[0m Globe.jsx
 [2026-08-28 22:06:25] \033[1;33m📁  File modificato:\033[0m Globe.jsx
 [2026-08-28 22:06:29] \033[0;34m⚡  Modifiche rilevate — avvio git flow...\033[0m
+[2026-08-28 22:06:30]    commit   | [main 5444229] Auto-deploy: 2026-08-28 22:06:30
+[2026-08-28 22:06:30]    commit   |  3 files changed, 297 insertions(+)
+[2026-08-28 22:06:30]    commit   |  create mode 100755 autocommit.command
+[2026-08-28 22:06:30]    commit   |  create mode 100644 autocommit.log
+[2026-08-28 22:06:30]    commit   |  create mode 100644 src/Globe.jsx
+[2026-08-28 22:06:30] \033[0;32m✔  Commit eseguito:\033[0m "Auto-deploy: 2026-08-28 22:06:30"
+[2026-08-28 22:06:31]    push     | To https://github.com/ferrucciomuran/cloudflare-test-app.git
+[2026-08-28 22:06:31]    push     |    77ae590..5444229  main -> main
+[2026-08-28 22:06:31] \033[0;32m✓  Push completato su origin/main\033[0m
+[2026-08-28 22:06:43] \033[1;33m📁  File modificato:\033[0m App.jsx
+[2026-08-28 22:06:43] \033[1;33m📁  File modificato:\033[0m App.jsx
+[2026-08-28 22:06:44] \033[1;33m📁  File modificato:\033[0m App.jsx
+[2026-08-28 22:06:48] \033[0;34m⚡  Modifiche rilevate — avvio git flow...\033[0m

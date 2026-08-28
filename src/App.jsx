@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Globe from './Globe.jsx'
 import './App.css'
 
 const CARDS = [
@@ -101,8 +102,16 @@ export default function App() {
 
       <main className="main">
         <section className="hero">
-          <h1 className="hero-title">Cloudflare Pages<br /><span className="gradient-text">React + Vite</span></h1>
-          <p className="hero-sub">Modern frontend · Edge-deployed · Instant worldwide</p>
+          {/* ── Rotating dot-globe background ───────────────────────────── */}
+          <div className="globe-bg" aria-hidden="true">
+            <Globe size={680} />
+          </div>
+
+          {/* ── Hero text (above globe) ──────────────────────────────────── */}
+          <div className="hero-content">
+            <h1 className="hero-title">Cloudflare Pages<br /><span className="gradient-text">React + Vite</span></h1>
+            <p className="hero-sub">Modern frontend · Edge-deployed · Instant worldwide</p>
+          </div>
         </section>
 
         <section className="stats-grid">
