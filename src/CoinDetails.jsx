@@ -139,9 +139,18 @@ function LargeChart({ data, color }) {
       ctx.strokeStyle = color
       ctx.lineWidth = 2.5
       ctx.lineJoin = 'round'
+      
+      ctx.shadowColor = color
+      ctx.shadowBlur = 16
+      ctx.shadowOffsetY = 6
+      ctx.shadowOffsetX = 0
+      
       ctx.beginPath()
       pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y))
       ctx.stroke()
+      
+      ctx.shadowBlur = 0
+      ctx.shadowOffsetY = 0
 
       // ── Hover Interactivity ──
       if (mouseX !== null && mouseX >= 0 && mouseX <= cW && !isDragging) {
@@ -346,8 +355,13 @@ export default function CoinDetails({ coin, onBack }) {
 
   return (
     <div className="db-details-view">
+      <div className="db-details-bg-glow" style={{ background: color }}></div>
+      
       <div className="db-details-header">
-        <button className="db-back-btn" onClick={onBack}>← Back to Market</button>
+        <button className="db-back-btn" onClick={onBack}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Back to Market
+        </button>
         <div className="db-details-title">
           <img src={coin.image} alt={coin.name} className="db-details-img" />
           <h1>{coin.name} <span>{coin.symbol.toUpperCase()}</span></h1>
