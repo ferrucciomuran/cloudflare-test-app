@@ -230,16 +230,29 @@ function LargeChart({ data, color }) {
       const mx = e.clientX - rect.left
       if (mx > cW) return 
 
-      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85
-      let newScale = scale * zoomFactor
-      if (newScale < 1) newScale = 1
-      if (newScale > 50) newScale = 50
+      // Trackpad Due-Dita Orizzontale o Mouse Wheel + Shift = Panning
+      const isPan = (Math.abs(e.deltaX) > Math.abs(e.deltaY) && !e.ctrlKey) || e.shiftKey
 
-      let newOffset = mx - ((mx - offsetX) / scale) * newScale
-      newOffset = clampOffset(newScale, newOffset)
+      if (isPan) {
+        const panAmount = e.shiftKey ? e.deltaY : e.deltaX
+        offsetX = clampOffset(scale, offsetX - panAmount)
+      } else {
+        // Pinch-to-zoom su Trackpad (ctrlKey) o Mouse Wheel verticale = Zoom
+        // L'uso di Math.exp rende lo zoom fluido su trackpad
+        const zoomSpeed = 0.005
+        const zoomFactor = Math.exp(-e.deltaY * zoomSpeed)
+        
+        let newScale = scale * zoomFactor
+        if (newScale < 1) newScale = 1
+        if (newScale > 50) newScale = 50
 
-      scale = newScale
-      offsetX = newOffset
+        let newOffset = mx - ((mx - offsetX) / scale) * newScale
+        newOffset = clampOffset(newScale, newOffset)
+
+        scale = newScale
+        offsetX = newOffset
+      }
+
       mouseX = mx
       requestAnimationFrame(draw)
     }
