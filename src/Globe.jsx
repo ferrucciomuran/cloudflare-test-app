@@ -155,9 +155,9 @@ export default function Globe({ size = 680 }) {
           const theta = lon + rot
 
           const cosLat = Math.cos(lat)
-          const x3 = cosLat * Math.cos(theta)
+          const x3 = cosLat * Math.sin(theta)   // sin → east is RIGHT
           const y3 = Math.sin(lat)
-          const z3 = cosLat * Math.sin(theta)
+          const z3 = cosLat * Math.cos(theta)   // cos → depth/visibility
 
           if (z3 < -0.04) continue
 
